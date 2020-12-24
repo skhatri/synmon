@@ -1,0 +1,4 @@
+{
+    "reporterEnabled": "./cypress/reporters/metrics.js, ./cypress/reporters/summary.js"
+    
+}

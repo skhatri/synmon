@@ -1,0 +1,9 @@
+{
+  "projectId": "synmon",
+  "video": false,  
+  "reporter": "cypress-multi-reporters",
+  "reporterOptions": {
+    "configFile": "reporter-config.json"
+  }
+}
+
