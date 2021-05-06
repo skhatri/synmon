@@ -2,6 +2,7 @@ const Mocha = require('mocha');
 const axios = require('axios').default;
 
 let gateway_url = process.env.CYPRESS_GATEWAY_URL || "http://localhost:9091";
+let sendMetrics = process.env.CYPRESS_SEND_METRICS || "false";
 
 const {
   EVENT_RUN_BEGIN,
@@ -78,19 +79,21 @@ class MetricsReporter {
           return lines;
         }).join("\n");
         let url = `${gateway_url}/metrics/job/statuspage/instance/platforms`
-        try {
-          let resp = await axios({
-            method: "POST",
-            headers: {
-              "Content-Type": "text/plain",
-              "Content-Length": serialisedMetric.length
-            },
-            data: serialisedMetric,
-            url,
-          });
-          console.log("push status", resp.status);  
-        } catch(err){
-          console.error(err);
+        if (sendMetrics === "true") {
+          try {
+            let resp = await axios({
+              method: "POST",
+              headers: {
+                "Content-Type": "text/plain",
+                "Content-Length": serialisedMetric.length
+              },
+              data: serialisedMetric,
+              url,
+            });
+            console.log("push status", resp.status);
+          } catch (err) {
+            console.error(err);
+          }
         }
       });
   }
