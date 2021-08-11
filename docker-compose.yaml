@@ -1,33 +1,39 @@
 version: "3.7"
 volumes:
-  grafana: {}
+  grafana: { }
 services:
-  
-  cypress-runner:
+
+  cypress:
     build: .
     image: cypress
-    container_name: cypress-runner
+    container_name: cypress
     environment:
       - "CYPRESS_GATEWAY_URL=http://push-gateway:9091"
       - "CYPRESS_PROM_URL=http://prometheus:9090"
       - "CYPRESS_GRAFANA_URL=http://grafana:3000"
       - "CYPRESS_AIRFLOW_URL=http://airflow:8280"
-    command:    
+      - "PUSH_URL=http://echo:8080/echo"
+    command:
       - "--spec"
-      - "**/pushgateway.spec.js"
-      - "**/prometheus.ui.spec.js"
-      - "**/airflow.spec.js"
+      - "**/pushgateway.spec.js,**/prometheus.ui.spec.js,**/airflow.spec.js"
     depends_on:
       - push-gateway
       - prometheus
       - grafana
+      - echo
     volumes:
       - ./screenshots:/opt/app/src/cypress/screenshots
+      - ./cypress:/home/node/src/cypress
+      - ./cypress.json:/home/node/src/cypress.json
+      - ./package.json:/home/node/src/package.json
+      - ./reporter-config.json:/home/node/src/reporter-config.json
+      - ./node_modules:/home/node/src/node_modules
+      - ./logs:/tmp/logs
     networks:
       envoymesh:
         aliases:
           - cypress-runner
-    restart: on-failure
+    restart: "no"
 
   grafana:
     image: "grafana/grafana:latest"
@@ -47,10 +53,10 @@ services:
       - "3000:3000"
 
     healthcheck:
-        test: ["CMD-SHELL", "nc -z localhost 3000"]
-        interval: "10s"
-        timeout: "5s"
-        retries: 3      
+      test: [ "CMD-SHELL", "nc -z localhost 3000" ]
+      interval: "10s"
+      timeout: "5s"
+      retries: 3
 
   push-gateway:
     image: "prom/pushgateway:v1.3.0"
@@ -63,21 +69,21 @@ services:
     command:
       - --log.format=json
       - --web.enable-admin-api
-    expose: 
+    expose:
       - 9091
     ports:
       - "9091:9091"
     healthcheck:
-        test: ["CMD-SHELL", "nc -z localhost 9091"]
-        interval: "10s"
-        timeout: "5s"
-        retries: 3
+      test: [ "CMD-SHELL", "nc -z localhost 9091" ]
+      interval: "10s"
+      timeout: "5s"
+      retries: 3
 
   prometheus:
     image: "prom/prometheus:latest"
     container_name: prometheus
     volumes:
-    - ./observability/prometheus/prometheus.yaml:/etc/prometheus/prometheus.yml
+      - ./observability/prometheus/prometheus.yaml:/etc/prometheus/prometheus.yml
     networks:
       envoymesh:
         aliases:
@@ -88,9 +94,22 @@ services:
       - "9090:9090"
 
     healthcheck:
-        test: ["CMD-SHELL", "nc -z localhost 9090"]
-        interval: "10s"
-        timeout: "5s"
-        retries: 3
+      test: [ "CMD-SHELL", "nc -z localhost 9090" ]
+      interval: "10s"
+      timeout: "5s"
+      retries: 3
+
+  echo:
+    image: "skhatri/echo-api:v1.0.2"
+    container_name: echo
+    networks:
+      envoymesh:
+        aliases:
+          - echo
+    expose:
+      - "8080"
+    ports:
+      - "9100:8080"
+
 networks:
-  envoymesh: {}
+  envoymesh: { }
